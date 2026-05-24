@@ -1,35 +1,48 @@
 exports.handler = async function(event, context) {
-  const newsApiKey = event.headers['x-news-api-key'] || event.headers['X-News-Api-Key'];
-  if (!newsApiKey) {
+  const gnewsKey = event.headers['x-gnews-key'] || event.headers['X-Gnews-Key'];
+  if (!gnewsKey) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Geen NewsAPI key meegegeven.' })
+      body: JSON.stringify({ error: 'Geen GNews API key meegegeven.' })
     };
   }
 
-  const urls = [
-    'https://newsapi.org/v2/top-headlines?country=be&pageSize=40&apiKey=' + newsApiKey,
-    'https://newsapi.org/v2/everything?domains=hln.be,vrt.be,nieuwsblad.be,gva.be,hbvl.be,tijd.be,vtm.be,sporza.be,demorgen.be,knack.be&language=nl&sortBy=publishedAt&pageSize=40&apiKey=' + newsApiKey,
+  // 3 calls: algemeen BE, sport, entertainment — blijft binnen gratis limiet van 10/dag
+  var calls = [
+    'https://gnews.io/api/v4/top-headlines?country=be&lang=nl&max=20&token=' + gnewsKey,
+    'https://gnews.io/api/v4/top-headlines?topic=sports&country=be&lang=nl&max=10&token=' + gnewsKey,
+    'https://gnews.io/api/v4/top-headlines?topic=entertainment&country=be&lang=nl&max=10&token=' + gnewsKey,
   ];
 
   try {
-    const responses = await Promise.allSettled(urls.map(function(u) {
-      return fetch(u, { signal: AbortSignal.timeout(8000) });
+    var responses = await Promise.allSettled(calls.map(function(url) {
+      return fetch(url, { signal: AbortSignal.timeout(10000) });
     }));
 
-    const jsons = await Promise.allSettled(responses.map(function(r) {
-      return r.status === 'fulfilled' && r.value.ok ? r.value.json() : Promise.resolve(null);
+    var jsons = await Promise.allSettled(responses.map(function(r) {
+      if (r.status !== 'fulfilled') return Promise.resolve(null);
+      if (!r.value.ok) {
+        return r.value.json().then(function(e) {
+          throw new Error(e.errors ? e.errors.join(', ') : 'GNews fout ' + r.value.status);
+        });
+      }
+      return r.value.json();
     }));
 
     var seen = new Set();
     var artikels = [];
     var bronTelling = {};
+    var gnewsError = null;
 
     jsons.forEach(function(result) {
-      if (result.status !== 'fulfilled' || !result.value || !result.value.articles) return;
+      if (result.status === 'rejected') {
+        gnewsError = result.reason.message;
+        return;
+      }
+      if (!result.value || !result.value.articles) return;
       result.value.articles.forEach(function(a) {
-        if (!a.url || !a.title || a.title === '[Removed]') return;
+        if (!a.url || !a.title) return;
         if (seen.has(a.url)) return;
         seen.add(a.url);
         var bronNaam = (a.source && a.source.name) ? a.source.name : new URL(a.url).hostname.replace('www.','');
@@ -38,11 +51,19 @@ exports.handler = async function(event, context) {
           bron: bronNaam,
           kop: a.title.trim(),
           url: a.url,
-          beschrijving: (a.description || a.content || '').replace(/<[^>]*>/g, '').trim().slice(0, 300),
+          beschrijving: (a.description || '').replace(/<[^>]*>/g, '').trim().slice(0, 300),
           datum: a.publishedAt || '',
         });
       });
     });
+
+    if (artikels.length === 0 && gnewsError) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'GNews fout: ' + gnewsError })
+      };
+    }
 
     artikels.sort(function(a, b) { return b.datum.localeCompare(a.datum); });
 
@@ -53,8 +74,9 @@ exports.handler = async function(event, context) {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ artikels: artikels.slice(0, 80), bronnen: bronnen })
+      body: JSON.stringify({ artikels: artikels, bronnen: bronnen })
     };
+
   } catch(e) {
     return {
       statusCode: 500,
