@@ -109,8 +109,8 @@ body{font-family:Georgia,serif;background:var(--cream);color:var(--ink);min-heig
     <span class="ctrl-label">Anthropic</span>
     <input type="password" class="ctrl-input" id="anthropicKey" placeholder="sk-ant-api03-..."/>
     <div class="ctrl-divider"></div>
-    <span class="ctrl-label">NewsAPI</span>
-    <input type="password" class="ctrl-input" id="newsApiKey" placeholder="newsapi.org key..."/>
+    <span class="ctrl-label">GNews</span>
+    <input type="password" class="ctrl-input" id="gnewsKey" placeholder="gnews.io key..."/>
     <button class="btn-primary" id="btnGenerate">&#9654; Genereer</button>
     <button class="btn-secondary" id="btnExport" style="display:none">&#8595; .txt</button>
   </div>
@@ -129,7 +129,7 @@ body{font-family:Georgia,serif;background:var(--cream);color:var(--ink);min-heig
     <div class="state-box">
       <div style="font-size:2rem;margin-bottom:.75rem">&#128240;</div>
       <div class="state-title">Klaar voor de dagelijkse briefing</div>
-      <div class="state-sub">Vul beide API keys in en klik op Genereer.<br>Nieuws wordt opgehaald via NewsAPI van HLN, VRT, VTM, GVA en meer.</div>
+      <div class="state-sub">Vul beide API keys in en klik op Genereer.<br>Nieuws wordt opgehaald via GNews van HLN, VRT, VTM, GVA en meer.</div>
     </div>
   </div>
 </div>
@@ -149,7 +149,7 @@ function hideWarn(){document.getElementById('warnBar').style.display='none';}
 function showLoadingNieuws(){
   document.getElementById('mainContent').innerHTML=
     '<div class="state-box"><div class="spinner"></div>'+
-    '<div class="state-title" style="margin-bottom:.75rem">Nieuws ophalen via NewsAPI...</div>'+
+    '<div class="state-title" style="margin-bottom:.75rem">Nieuws ophalen via GNews...</div>'+
     '<div class="state-sub">HLN, VRT, VTM, GVA, HNB, HBVL, De Tijd, Sporza</div></div>';
 }
 function showLoadingClaude(n){
@@ -167,17 +167,17 @@ function showEmpty(){
 
 function generateBriefing(){
   var anthropicKey=document.getElementById('anthropicKey').value.trim();
-  var newsKey=document.getElementById('newsApiKey').value.trim();
+  var newsKey=document.getElementById('gnewsKey').value.trim();
   if(!anthropicKey){showError('Voer je Anthropic API key in.');return;}
-  if(!newsKey){showError('Voer je NewsAPI key in (gratis via newsapi.org).');return;}
+  if(!newsKey){showError('Voer je GNews key in (gratis via gnews.io).');return;}
   hideError();hideWarn();
   document.getElementById('btnGenerate').disabled=true;
   document.getElementById('btnExport').style.display='none';
   showLoadingNieuws();
 
-  // Stuur NewsAPI key mee als header naar de Netlify function
+  // Stuur GNews key mee als header naar de Netlify function
   fetch('/.netlify/functions/rss',{
-    headers:{'x-news-api-key':newsKey}
+    headers:{'x-gnews-key':newsKey}
   })
   .then(function(r){
     if(!r.ok)return r.json().then(function(e){throw new Error(e.error||'Nieuws ophalen mislukt: '+r.status);});
@@ -189,7 +189,7 @@ function generateBriefing(){
     var bronnen=data.bronnen||[];
     rssSucceeded=bronnen.map(function(b){return b.naam;});
 
-    if(artikels.length===0)throw new Error('Geen artikels gevonden. Controleer je NewsAPI key.');
+    if(artikels.length===0)throw new Error('Geen artikels gevonden. Controleer je GNews key.');
 
     showLoadingClaude(artikels.length);
 
@@ -361,13 +361,13 @@ document.getElementById('btnExport').addEventListener('click',exportTxt);
 // Sla keys op in localStorage
 var sk=localStorage.getItem('anthropic_key');
 if(sk)document.getElementById('anthropicKey').value=sk;
-var nk=localStorage.getItem('newsapi_key');
-if(nk)document.getElementById('newsApiKey').value=nk;
+var nk=localStorage.getItem('gnews_key');
+if(nk)document.getElementById('gnewsKey').value=nk;
 document.getElementById('anthropicKey').addEventListener('change',function(){
   if(this.value.trim())localStorage.setItem('anthropic_key',this.value.trim());
 });
-document.getElementById('newsApiKey').addEventListener('change',function(){
-  if(this.value.trim())localStorage.setItem('newsapi_key',this.value.trim());
+document.getElementById('gnewsKey').addEventListener('change',function(){
+  if(this.value.trim())localStorage.setItem('gnews_key',this.value.trim());
 });
 </script>
 </body>
