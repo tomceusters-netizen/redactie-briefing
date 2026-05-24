@@ -1,62 +1,65 @@
-const FEEDS = [
-  { naam: 'Het Laatste Nieuws',     url: 'https://www.hln.be/rss.xml' },
-  { naam: 'Het Nieuwsblad',         url: 'https://www.nieuwsblad.be/rss.xml' },
-  { naam: 'Gazet van Antwerpen',    url: 'https://www.gva.be/rss.xml' },
-  { naam: 'Het Belang van Limburg', url: 'https://www.hbvl.be/rss.xml' },
-  { naam: 'VRT NWS',                url: 'https://www.vrt.be/vrtnws/nl.rss.xml' },
-  { naam: 'VTM Nieuws',             url: 'https://nieuws.vtm.be/rss' },
-  { naam: 'De Tijd',                url: 'https://www.tijd.be/rss/home.xml' },
-  { naam: 'Sporza',                 url: 'https://sporza.be/nl/rss.xml' },
-];
-
-function parseXML(xml, bronNaam) {
-  const items = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  let match;
-  while ((match = itemRegex.exec(xml)) !== null && items.length < 10) {
-    const block = match[1];
-    const getTag = (tag) => {
-      const m = block.match(new RegExp('<' + tag + '>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/' + tag + '>'));
-      return m ? m[1].trim() : '';
-    };
-    const kop = getTag('title');
-    const url = getTag('link') || getTag('guid');
-    const desc = getTag('description').replace(/<[^>]*>/g, '').trim().slice(0, 300);
-    if (kop && url && url.startsWith('http')) {
-      items.push({ bron: bronNaam, kop, url, beschrijving: desc });
-    }
-  }
-  return items;
-}
-
-async function fetchFeed(feed) {
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (compatible; NewsAggregator/1.0)',
-    'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-  };
-  try {
-    const res = await fetch(feed.url, { headers, signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return { naam: feed.naam, status: res.status, items: [] };
-    const text = await res.text();
-    const items = parseXML(text, feed.naam);
-    return { naam: feed.naam, status: 200, items };
-  } catch (e) {
-    return { naam: feed.naam, status: 0, error: e.message, items: [] };
-  }
-}
-
 exports.handler = async function(event, context) {
-  const results = await Promise.allSettled(FEEDS.map(fetchFeed));
-  const feeds = results.map(r => r.status === 'fulfilled' ? r.value : { naam: '?', status: 0, items: [] });
-  const allItems = feeds.flatMap(f => f.items);
-  const summary = feeds.map(f => ({ naam: f.naam, ok: f.items.length > 0, count: f.items.length }));
+  const newsApiKey = event.headers['x-news-api-key'] || event.headers['X-News-Api-Key'];
+  if (!newsApiKey) {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Geen NewsAPI key meegegeven.' })
+    };
+  }
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-    body: JSON.stringify({ artikels: allItems, bronnen: summary }),
-  };
+  const urls = [
+    'https://newsapi.org/v2/top-headlines?country=be&pageSize=40&apiKey=' + newsApiKey,
+    'https://newsapi.org/v2/everything?domains=hln.be,vrt.be,nieuwsblad.be,gva.be,hbvl.be,tijd.be,vtm.be,sporza.be,demorgen.be,knack.be&language=nl&sortBy=publishedAt&pageSize=40&apiKey=' + newsApiKey,
+  ];
+
+  try {
+    const responses = await Promise.allSettled(urls.map(function(u) {
+      return fetch(u, { signal: AbortSignal.timeout(8000) });
+    }));
+
+    const jsons = await Promise.allSettled(responses.map(function(r) {
+      return r.status === 'fulfilled' && r.value.ok ? r.value.json() : Promise.resolve(null);
+    }));
+
+    var seen = new Set();
+    var artikels = [];
+    var bronTelling = {};
+
+    jsons.forEach(function(result) {
+      if (result.status !== 'fulfilled' || !result.value || !result.value.articles) return;
+      result.value.articles.forEach(function(a) {
+        if (!a.url || !a.title || a.title === '[Removed]') return;
+        if (seen.has(a.url)) return;
+        seen.add(a.url);
+        var bronNaam = (a.source && a.source.name) ? a.source.name : new URL(a.url).hostname.replace('www.','');
+        bronTelling[bronNaam] = (bronTelling[bronNaam] || 0) + 1;
+        artikels.push({
+          bron: bronNaam,
+          kop: a.title.trim(),
+          url: a.url,
+          beschrijving: (a.description || a.content || '').replace(/<[^>]*>/g, '').trim().slice(0, 300),
+          datum: a.publishedAt || '',
+        });
+      });
+    });
+
+    artikels.sort(function(a, b) { return b.datum.localeCompare(a.datum); });
+
+    var bronnen = Object.keys(bronTelling).map(function(naam) {
+      return { naam: naam, ok: true, count: bronTelling[naam] };
+    });
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ artikels: artikels.slice(0, 80), bronnen: bronnen })
+    };
+  } catch(e) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: e.message })
+    };
+  }
 };
