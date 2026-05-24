@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>De Briefing</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#f4efe6;--paper:#faf8f4;--ink:#181714;--ink-2:#4a4640;
+  --ink-3:#8a857e;--rule:#d4ccc0;--rule-light:#e8e3da;
+  --accent:#b5271a;--gold:#c89b2a;--green:#1a6b3c;--blue:#1a3f6b;
+}
+body{font-family:Georgia,serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6}
+.page{max-width:960px;margin:0 auto;padding:1.5rem 1rem 4rem}
+.masthead{text-align:center;padding:1.5rem 0 1.25rem;border-bottom:3px double var(--rule)}
+.masthead-eyebrow{font-family:'Courier New',monospace;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.masthead-logo{font-size:clamp(2rem,8vw,3.5rem);font-weight:900;letter-spacing:-.04em;line-height:1;color:var(--ink);margin-bottom:.2rem}
+.masthead-logo em{color:var(--accent);font-style:normal}
+.masthead-tagline{font-family:'Courier New',monospace;font-size:10px;letter-spacing:.15em;color:var(--ink-3)}
+.control-bar{background:var(--paper);border:1px solid var(--rule);border-top:none;padding:.875rem 1rem;display:flex;align-items:center;gap:.625rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.ctrl-label{font-family:'Courier New',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.ctrl-input{flex:1;min-width:140px;padding:.5rem .75rem;border:1px solid var(--rule);background:var(--cream);font-family:'Courier New',monospace;font-size:12px;color:var(--ink);outline:none;border-radius:2px}
+.ctrl-input:focus{border-color:var(--accent)}
+.btn-primary{padding:.5rem 1.25rem;background:var(--accent);color:#fff;border:none;font-family:'Courier New',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:2px;white-space:nowrap;flex-shrink:0}
+.btn-primary:hover:not(:disabled){background:#8f1e14}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-secondary{padding:.4rem .875rem;background:transparent;color:var(--ink-2);border:1px solid var(--rule);font-family:'Courier New',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:2px;white-space:nowrap;flex-shrink:0}
+.btn-secondary:hover{border-color:var(--ink);color:var(--ink)}
+.cat-bar{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--rule)}
+.cat-chip{padding:.25rem .6rem;border:1px solid var(--rule);border-radius:999px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;background:var(--paper);color:var(--ink-2)}
+.cat-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.state-box{text-align:center;padding:3rem 1.5rem;border:1px dashed var(--rule);background:var(--paper);border-radius:2px}
+.state-title{font-size:1rem;color:var(--ink-2);margin-bottom:.35rem}
+.state-sub{font-family:'Courier New',monospace;font-size:11px;color:var(--ink-3);line-height:1.7}
+.spinner{display:inline-block;width:26px;height:26px;border:2px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;margin-bottom:.875rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rss-status{list-style:none;text-align:left;display:inline-block;margin-top:.75rem}
+.rss-status li{font-family:'Courier New',monospace;font-size:11px;color:var(--ink-3);padding:.18rem 0}
+.rss-status li.ok{color:var(--green)}
+.rss-status li.fail{color:#8b2a1a}
+.error-bar{background:#fdf0ee;border:1px solid #e8a89e;padding:.75rem 1rem;margin-bottom:1rem;font-family:'Courier New',monospace;font-size:12px;color:#8b2a1a;border-radius:2px}
+.warn-bar{background:#fef9e7;border:1px solid #e8d080;padding:.6rem 1rem;margin-bottom:1rem;font-family:'Courier New',monospace;font-size:11px;color:#8a6500;border-radius:2px}
+.date-bar{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem;padding:.5rem 0;margin-bottom:1.25rem;border-bottom:2px solid var(--ink)}
+.date-bar-title{font-size:1rem;font-weight:bold}
+.date-bar-date{font-family:'Courier New',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.1em}
+.section-head{display:flex;align-items:center;gap:.625rem;margin:1.75rem 0 .875rem;padding-bottom:.3rem;border-bottom:1.5px solid var(--ink)}
+.section-icon{font-size:1rem}
+.section-label{font-family:'Courier New',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);font-weight:bold}
+.section-count{font-family:'Courier New',monospace;font-size:10px;color:var(--ink-3);margin-left:auto}
+.bronnen-bar{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.bron-badge{font-family:'Courier New',monospace;font-size:9px;letter-spacing:.06em;padding:2px 7px;border:1px solid var(--rule);border-radius:999px;color:var(--ink-3);background:var(--paper)}
+.bron-badge.ok{border-color:var(--green);color:var(--green)}
+.cat-section{margin-bottom:1.5rem}
+.cat-head{font-family:'Courier New',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--accent);padding-bottom:.2rem;margin-bottom:.75rem}
+.news-item{display:grid;grid-template-columns:1fr auto;gap:.5rem;align-items:start;padding:.75rem 0;border-bottom:1px solid var(--rule-light)}
+.news-item:last-child{border-bottom:none}
+.news-kop{font-size:.975rem;font-weight:bold;line-height:1.3;margin-bottom:.25rem}
+.news-kop a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule)}
+.news-kop a:hover{color:var(--accent);border-color:var(--accent)}
+.news-sum{font-size:.85rem;line-height:1.55;color:var(--ink-2);margin-bottom:.35rem}
+.news-meta{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.news-bron{font-family:'Courier New',monospace;font-size:10px;color:var(--ink-3);text-decoration:none;border-bottom:1px solid var(--rule);letter-spacing:.04em}
+.news-bron:hover{color:var(--accent);border-color:var(--accent)}
+.hot-tag{font-family:'Courier New',monospace;font-size:9px;color:var(--accent);border:1px solid var(--accent);padding:1px 5px;border-radius:2px;flex-shrink:0}
+.dossier-tag{font-family:'Courier New',monospace;font-size:9px;color:var(--blue);border:1px solid var(--blue);padding:1px 5px;border-radius:2px}
+.gasten-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.875rem}
+@media(max-width:700px){.gasten-grid{grid-template-columns:1fr}}
+@media(min-width:701px) and (max-width:900px){.gasten-grid{grid-template-columns:repeat(2,1fr)}}
+.gast-card{background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--ink-3);padding:.875rem;border-radius:2px}
+.gast-card.type-bv{border-top-color:var(--gold)}
+.gast-card.type-expert{border-top-color:var(--blue)}
+.gast-card.type-politicus{border-top-color:var(--accent)}
+.gast-card.type-wild{border-top-color:var(--green)}
+.gast-type{font-family:'Courier New',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.3rem}
+.gast-naam{font-size:.975rem;font-weight:bold;margin-bottom:.1rem}
+.gast-functie{font-family:'Courier New',monospace;font-size:10px;color:var(--ink-3);margin-bottom:.4rem}
+.gast-why{font-size:.8rem;line-height:1.5;color:var(--ink-2);margin-bottom:.4rem}
+.gast-opener-label{font-family:'Courier New',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.15rem}
+.gast-opener{font-size:.8rem;font-style:italic;color:var(--ink-2);line-height:1.4;border-left:2px solid var(--rule);padding-left:.5rem}
+.gast-item{font-family:'Courier New',monospace;font-size:9px;color:var(--ink-3);margin-top:.4rem;border-top:1px solid var(--rule-light);padding-top:.35rem}
+.tafel-grid{display:grid;gap:.875rem}
+@media(min-width:600px){.tafel-grid{grid-template-columns:repeat(2,1fr)}}
+.stelling-card{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--gold);padding:.875rem 1rem;border-radius:2px}
+.stelling-label{font-family:'Courier New',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.stelling-tekst{font-size:.975rem;font-weight:bold;margin-bottom:.3rem;line-height:1.3}
+.stelling-toelichting{font-size:.82rem;color:var(--ink-2);line-height:1.5;margin-bottom:.3rem}
+.stelling-aanleiding{font-size:.78rem;color:var(--ink-3);font-style:italic;margin-bottom:.4rem}
+.stelling-meta{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
+.stelling-toon{font-family:'Courier New',monospace;font-size:9px;padding:2px 6px;border-radius:2px}
+.toon-humor{background:#fef9e7;color:#8a6500;border:1px solid #e8d080}
+.toon-debat{background:#eef3fa;color:#1a3f6b;border:1px solid #a0b8d8}
+.toon-pittig{background:#fdecea;color:#8b2a1a;border:1px solid #e8a89e}
+.stelling-item-label{font-family:'Courier New',monospace;font-size:9px;color:var(--ink-3)}
+.export-bar{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.75rem;padding-top:1rem;border-top:1px solid var(--rule)}
+@media(max-width:480px){
+  .control-bar{flex-direction:column;align-items:stretch}
+  .ctrl-input{min-width:unset}
+  .btn-primary,.btn-secondary{text-align:center}
+  .news-item{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="masthead">
+    <div class="masthead-eyebrow">Intern gebruik — Redactie</div>
+    <div class="masthead-logo">DE <em>BRIEF</em>ING</div>
+    <div class="masthead-tagline" id="todayDate"></div>
+  </div>
+  <div class="control-bar">
+    <span class="ctrl-label">API Key</span>
+    <input type="password" class="ctrl-input" id="apiKeyInput" placeholder="sk-ant-api03-..."/>
+    <button class="btn-primary" id="btnGenerate">&#9654; Genereer</button>
+    <button class="btn-secondary" id="btnExport" style="display:none">&#8595; .txt</button>
+  </div>
+  <div class="cat-bar">
+    <button class="cat-chip active" data-cat="alles">Alles</button>
+    <button class="cat-chip" data-cat="Binnenland">Binnenland</button>
+    <button class="cat-chip" data-cat="Buitenland">Buitenland</button>
+    <button class="cat-chip" data-cat="Sport">Sport</button>
+    <button class="cat-chip" data-cat="Human Interest">Human Interest</button>
+    <button class="cat-chip" data-cat="Media & Cultuur">Media &amp; Cultuur</button>
+    <button class="cat-chip" data-cat="Economie">Economie</button>
+  </div>
+  <div id="errorBar" class="error-bar" style="display:none"></div>
+  <div id="warnBar" class="warn-bar" style="display:none"></div>
+  <div id="mainContent">
+    <div class="state-box">
+      <div style="font-size:2rem;margin-bottom:.75rem">&#128240;</div>
+      <div class="state-title">Klaar voor de dagelijkse briefing</div>
+      <div class="state-sub">Voer je API key in en klik op Genereer.<br>Nieuws wordt opgehaald van HLN, VRT, VTM, GVA, HNB, HBVL, De Tijd en Sporza.</div>
+    </div>
+  </div>
+</div>
+<script>
+var briefingData=null,activeFilter='alles',rssSucceeded=[];
+var today=new Date();
+var dateStr=today.toLocaleDateString('nl-BE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+var dateShort=today.toISOString().slice(0,10);
+document.getElementById('todayDate').textContent=dateStr.toUpperCase();
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showError(m){var b=document.getElementById('errorBar');b.textContent='⚠ '+m;b.style.display='';}
+function hideError(){document.getElementById('errorBar').style.display='none';}
+function showWarn(m){var b=document.getElementById('warnBar');b.textContent='ℹ '+m;b.style.display='';}
+function hideWarn(){document.getElementById('warnBar').style.display='none';}
+
+function showLoadingRSS(){
+  document.getElementById('mainContent').innerHTML=
+    '<div class="state-box"><div class="spinner"></div>'+
+    '<div class="state-title" style="margin-bottom:.75rem">Nieuws ophalen...</div>'+
+    '<ul class="rss-status" id="rssList">'+
+    '<li>○ HLN</li><li>○ Het Nieuwsblad</li><li>○ GVA</li><li>○ HBVL</li>'+
+    '<li>○ VRT NWS</li><li>○ VTM Nieuws</li><li>○ De Tijd</li><li>○ Sporza</li>'+
+    '</ul>'+
+    '<div class="state-sub" style="margin-top:1rem">Ophalen via server...</div></div>';
+}
+
+function showLoadingClaude(n){
+  document.getElementById('mainContent').innerHTML=
+    '<div class="state-box"><div class="spinner"></div>'+
+    '<div class="state-title" style="margin-bottom:.75rem">Briefing wordt opgemaakt...</div>'+
+    '<div class="state-sub">'+n+' artikels verwerkt door Claude.<br>±20 seconden</div></div>';
+}
+
+function renderRSSStatus(bronnen){
+  var list=document.getElementById('rssList');
+  if(!list)return;
+  var items=list.querySelectorAll('li');
+  bronnen.forEach(function(b,i){
+    if(items[i]){
+      items[i].className=b.ok?'ok':'fail';
+      items[i].textContent=(b.ok?'✓':'✗')+' '+b.naam+(b.ok?' ('+b.count+')':'');
+    }
+  });
+}
+
+function generateBriefing(){
+  var key=document.getElementById('apiKeyInput').value.trim();
+  if(!key){showError('Voer eerst je Anthropic API key in.');return;}
+  hideError();hideWarn();
+  document.getElementById('btnGenerate').disabled=true;
+  document.getElementById('btnExport').style.display='none';
+  showLoadingRSS();
+
+  // Roep de Netlify function aan — draait server-side, geen CORS problemen
+  fetch('/.netlify/functions/rss')
+    .then(function(r){
+      if(!r.ok)throw new Error('RSS functie fout: '+r.status);
+      return r.json();
+    })
+    .then(function(data){
+      var artikels=data.artikels||[];
+      var bronnen=data.bronnen||[];
+      renderRSSStatus(bronnen);
+      rssSucceeded=bronnen.filter(function(b){return b.ok;}).map(function(b){return b.naam;});
+
+      if(artikels.length===0){
+        throw new Error('Geen artikels opgehaald. Probeer opnieuw.');
+      }
+      if(rssSucceeded.length<3){
+        showWarn('Slechts '+rssSucceeded.length+' van 8 bronnen geladen: '+rssSucceeded.join(', '));
+      }
+
+      setTimeout(function(){showLoadingClaude(artikels.length);},600);
+
+      var tekst=artikels.map(function(a){
+        return '[BRON: '+a.bron+']\nKOP: '+a.kop+'\nURL: '+a.url+'\nINHOUD: '+a.beschrijving;
+      }).join('\n\n---\n\n');
+
+      var sys='Je bent eindredacteur van een Vlaams prime-time tv-duidingsprogramma.\n\n'+
+        'ABSOLUTE REGEL: Gebruik ENKEL de artikels hieronder. Koppen en URLs exact overnemen. Niets verzinnen.\n\n'+
+        'Geef je antwoord UITSLUITEND als geldige JSON zonder markdown:\n'+
+        '{"nieuws":[{"categorie":"Binnenland|Buitenland|Sport|Human Interest|Media & Cultuur|Economie",'+
+        '"kop":"exacte kop uit input","samenvatting":"2-3 zinnen journalistiek","bron":"exacte bronnaam",'+
+        '"bronUrl":"exacte URL uit input","hot":true,"dossier":"string of null"}],'+
+        '"gasten":[{"naam":"echte bekende Vlaming","functie":"string","type":"bv|expert|politicus|wild",'+
+        '"waarom":"1-2 zinnen","opener":"suggestie openingsvraag","gekoppeldItem":"exacte kop"}],'+
+        '"stellingen":[{"tekst":"ja/nee stelling","toelichting":"1 zin","toon":"humor|debat|pittig",'+
+        '"aanleiding":"nieuwskop als aanleiding","aanleidingUitleg":"1 zin link"}]}\n\n'+
+        'NIEUWS: 10-16 items, exacte koppen en URLs.\n'+
+        'GASTEN: Exact 3, mix van types, echte bekende Vlamingen.\n'+
+        'STELLINGEN: 6-8 stuks, luchtig en grappig. Nieuws = aanleiding, vraag = breed en herkenbaar. '+
+        'Toon: "Is pinnen onder 5 euro asociaal?", "Heb je recht op een middagdutje?", '+
+        '"Moet je verjaardag op het werk bekendmaken?". Kort, direct, knipoog.';
+
+      var msg='Artikels van '+dateStr+'. Gebruik ALLEEN deze artikels:\n\n'+tekst;
+
+      return fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key':key,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body:JSON.stringify({
+          model:'claude-sonnet-4-6',
+          max_tokens:6000,
+          system:sys,
+          messages:[{role:'user',content:msg}]
+        })
+      });
+    })
+    .then(function(r){
+      if(!r.ok)return r.json().then(function(e){throw new Error((e.error&&e.error.message)||'API fout '+r.status);});
+      return r.json();
+    })
+    .then(function(data){
+      var tb=null;
+      for(var i=0;i<data.content.length;i++){if(data.content[i].type==='text'){tb=data.content[i];break;}}
+      if(!tb)throw new Error('Geen tekstantwoord ontvangen.');
+      var raw=tb.text.trim().replace(/```json/g,'').replace(/```/g,'').trim();
+      var s=raw.indexOf('{'),e=raw.lastIndexOf('}');
+      if(s===-1||e===-1)throw new Error('Geen geldig JSON-antwoord.');
+      briefingData=JSON.parse(raw.slice(s,e+1));
+      renderBriefing(briefingData);
+      document.getElementById('btnExport').style.display='';
+    })
+    .catch(function(e){showError('Fout: '+e.message);showEmpty();})
+    .finally(function(){document.getElementById('btnGenerate').disabled=false;});
+}
+
+function renderBriefing(data){
+  var nieuws=data.nieuws||[],gasten=data.gasten||[],stellingen=data.stellingen||[];
+  var gef=activeFilter==='alles'?nieuws:nieuws.filter(function(n){return n.categorie===activeFilter;});
+  var cats={};
+  gef.forEach(function(n){if(!cats[n.categorie])cats[n.categorie]=[];cats[n.categorie].push(n);});
+  var ci={'Binnenland':'🏛️','Buitenland':'🌍','Sport':'⚽','Human Interest':'🤝','Media & Cultuur':'🎭','Economie':'📈'};
+  var tl={bv:'Bekende Vlaming',expert:'Expert / Autoriteit',politicus:'Politicus',wild:'Wildcard'};
+  var tnl={humor:'😄 Luchtig',debat:'💬 Debat',pittig:'🔥 Pittig'};
+  var h='';
+  h+='<div class="date-bar"><span class="date-bar-title">Redactiebriefing</span><span class="date-bar-date">'+dateStr.toUpperCase()+'</span></div>';
+  var bronnen=[];nieuws.forEach(function(n){if(n.bron&&bronnen.indexOf(n.bron)===-1)bronnen.push(n.bron);});
+  if(bronnen.length){
+    h+='<div class="bronnen-bar">';
+    bronnen.forEach(function(b){var ok=rssSucceeded.indexOf(b)!==-1;h+='<span class="bron-badge'+(ok?' ok':'')+'">'+esc(b)+'</span>';});
+    h+='</div>';
+  }
+  h+='<div class="section-head"><span class="section-icon">📰</span><span class="section-label">Nieuws</span><span class="section-count">'+gef.length+' items</span></div>';
+  if(!gef.length){
+    h+='<div class="state-box"><div class="state-sub">Geen items voor deze categorie.</div></div>';
+  }else{
+    Object.keys(cats).forEach(function(cat){
+      h+='<div class="cat-section"><div class="cat-head">'+(ci[cat]||'')+' '+esc(cat)+'</div>';
+      cats[cat].forEach(function(item){
+        var hasUrl=item.bronUrl&&item.bronUrl.length>8;
+        h+='<div class="news-item"><div>';
+        h+='<div class="news-kop">';
+        if(hasUrl)h+='<a href="'+esc(item.bronUrl)+'" target="_blank" rel="noopener">'+esc(item.kop)+'</a>';
+        else h+=esc(item.kop);
+        h+='</div><div class="news-sum">'+esc(item.samenvatting)+'</div>';
+        h+='<div class="news-meta">';
+        if(hasUrl)h+='<a class="news-bron" href="'+esc(item.bronUrl)+'" target="_blank" rel="noopener">'+esc(item.bron)+' &#8599;</a>';
+        else h+='<span class="news-bron">'+esc(item.bron)+'</span>';
+        if(item.dossier)h+='<span class="dossier-tag">'+esc(item.dossier)+'</span>';
+        h+='</div></div><div>'+(item.hot?'<span class="hot-tag">ACTUEEL</span>':'')+'</div></div>';
+      });
+      h+='</div>';
+    });
+  }
+  h+='<div class="section-head"><span class="section-icon">🎙️</span><span class="section-label">Gastensuggesties</span><span class="section-count">3 gasten · elk ±15 min</span></div>';
+  h+='<div class="gasten-grid">';
+  gasten.forEach(function(g){
+    var t=g.type||'wild';
+    h+='<div class="gast-card type-'+esc(t)+'">';
+    h+='<div class="gast-type">'+esc(tl[t]||t)+'</div>';
+    h+='<div class="gast-naam">'+esc(g.naam)+'</div>';
+    h+='<div class="gast-functie">'+esc(g.functie)+'</div>';
+    h+='<div class="gast-why">'+esc(g.waarom)+'</div>';
+    h+='<div class="gast-opener-label">Suggestie openingsvraag</div>';
+    h+='<div class="gast-opener">&ldquo;'+esc(g.opener)+'&rdquo;</div>';
+    h+='<div class="gast-item">re: '+esc(g.gekoppeldItem)+'</div></div>';
+  });
+  h+='</div>';
+  h+='<div class="section-head"><span class="section-icon">🗣️</span><span class="section-label">Ja/Nee — Tafelspringers</span><span class="section-count">'+stellingen.length+' stellingen</span></div>';
+  h+='<div class="tafel-grid">';
+  stellingen.forEach(function(s){
+    var tn=s.toon||'humor';
+    h+='<div class="stelling-card">';
+    h+='<div class="stelling-label">Stelling</div>';
+    h+='<div class="stelling-tekst">'+esc(s.tekst)+'</div>';
+    h+='<div class="stelling-toelichting">'+esc(s.toelichting)+'</div>';
+    if(s.aanleidingUitleg)h+='<div class="stelling-aanleiding">&#128240; '+esc(s.aanleidingUitleg)+'</div>';
+    h+='<div class="stelling-meta"><span class="stelling-toon toon-'+esc(tn)+'">'+esc(tnl[tn]||tn)+'</span>';
+    if(s.aanleiding)h+='<span class="stelling-item-label">&#8618; '+esc(s.aanleiding)+'</span>';
+    h+='</div></div>';
+  });
+  h+='</div>';
+  h+='<div class="export-bar"><button class="btn-secondary" onclick="exportTxt()">&#8595; Exporteer als .txt</button></div>';
+  document.getElementById('mainContent').innerHTML=h;
+}
+
+function showEmpty(){
+  document.getElementById('mainContent').innerHTML=
+    '<div class="state-box"><div style="font-size:2rem;margin-bottom:.75rem">⚠️</div>'+
+    '<div class="state-title">Er ging iets mis</div>'+
+    '<div class="state-sub">Controleer de foutmelding hierboven.</div></div>';
+}
+
+function exportTxt(){
+  if(!briefingData)return;
+  var d=briefingData,NL='\n',out='';
+  out+='REDACTIEBRIEFING '+dateStr.toUpperCase()+NL+'='.repeat(60)+NL+NL;
+  var cats={};
+  d.nieuws.forEach(function(n){if(!cats[n.categorie])cats[n.categorie]=[];cats[n.categorie].push(n);});
+  out+='NIEUWS'+NL+'-'.repeat(60)+NL+NL;
+  Object.keys(cats).forEach(function(cat){
+    out+='| '+cat.toUpperCase()+NL+NL;
+    cats[cat].forEach(function(i){
+      out+='* '+i.kop+(i.hot?' [ACTUEEL]':'')+NL+'  '+i.samenvatting+NL+'  '+i.bron+' - '+i.bronUrl+NL+NL;
+    });
+  });
+  out+=NL+'='.repeat(60)+NL+'GASTENSUGGESTIES'+NL+'='.repeat(60)+NL+NL;
+  d.gasten.forEach(function(g,i){
+    out+=(i+1)+'. '+g.naam+' ('+g.functie+')'+NL+'   Waarom: '+g.waarom+NL+'   Opener: "'+g.opener+'"'+NL+'   Item: '+g.gekoppeldItem+NL+NL;
+  });
+  out+=NL+'='.repeat(60)+NL+'JA/NEE STELLINGEN'+NL+'='.repeat(60)+NL+NL;
+  d.stellingen.forEach(function(s,i){
+    out+=(i+1)+'. '+s.tekst+NL+'   '+s.toelichting+NL+'   Aanleiding: '+(s.aanleiding||'/')+NL+NL;
+  });
+  var blob=new Blob([out],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='briefing-'+dateShort+'.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+document.querySelectorAll('.cat-chip').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.cat-chip').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');activeFilter=btn.dataset.cat;
+    if(briefingData)renderBriefing(briefingData);
+  });
+});
+document.getElementById('btnGenerate').addEventListener('click',generateBriefing);
+document.getElementById('btnExport').addEventListener('click',exportTxt);
+var sk=localStorage.getItem('briefing_api_key');
+if(sk)document.getElementById('apiKeyInput').value=sk;
+document.getElementById('apiKeyInput').addEventListener('change',function(){
+  if(this.value.trim())localStorage.setItem('briefing_api_key',this.value.trim());
+});
+</script>
+</body>
+</html>
